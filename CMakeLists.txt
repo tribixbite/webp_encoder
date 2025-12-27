@@ -42,7 +42,7 @@ endif ()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE lib${PROJECT_NAME})
 
-find_program(CLANG_FORMAT clang-format)
+find_program(CLANG_FORMAT clang-format NO_CMAKE_PATH)
 if (CLANG_FORMAT)
     list(APPEND ALL_SOURCES ${LIB_SOURCES} ${CLI_SOURCES} ${WASM_SOURCES})
     add_custom_target(
