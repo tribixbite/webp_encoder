@@ -1,183 +1,187 @@
 name: ci
 
 on:
-    push:
-        branches: [ master ]
-    pull_request:
-        branches: [ master ]
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
-    code-style:
-        runs-on: ubuntu-24.04
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-            -   name: Install clang-format-21
-                run: |
-                    UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME)
-                    CLANG_FORMAT_VERSION=21
-                    wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-                    echo "deb http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_FORMAT_VERSION} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-                    echo "deb-src http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_FORMAT_VERSION} main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-                    sudo apt-get update
-                    sudo apt-get install clang-format-${CLANG_FORMAT_VERSION}
-                    sudo ln -s -f /usr/bin/clang-format-${CLANG_FORMAT_VERSION} /usr/bin/clang-format
-                    clang-format --version
-            -   name: Check code style
-                run: |
-                    clang-format --dry-run --Werror --verbose cli/* src/* wasm/*
+  code-style:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Install clang-format-22
+        run: |
+          UBUNTU_CODENAME=$(. /etc/os-release && echo $VERSION_CODENAME)
+          CLANG_FORMAT_VERSION=22
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          echo "deb http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_FORMAT_VERSION} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb-src http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_FORMAT_VERSION} main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install clang-format-${CLANG_FORMAT_VERSION}
+          sudo ln -s -f /usr/bin/clang-format-${CLANG_FORMAT_VERSION} /usr/bin/clang-format
+          clang-format --version
+      - name: Check code style
+        run: |
+          clang-format --dry-run --Werror --verbose cli/* src/* wasm/*
 
-    windows:
-        needs: code-style
-        runs-on: ${{ matrix.runner }}
-        strategy:
-            matrix:
-                runner:
-                    - windows-2022
-                    - windows-2025
-                target:
-                    -   preset: x64-windows-release
-                        triplet: x64-windows
-                        arch: amd64
-                    -   preset: x86-windows-release
-                        triplet: x86-windows
-                        arch: x86
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-            -   name: Checkout vcpkg
-                uses: actions/checkout@v4
-                with:
-                    repository: xiaozhuai/vcpkg
-                    submodules: recursive
-                    path: vcpkg
-            -   name: Install dependencies
-                shell: cmd
-                run: |
-                    cmd /k .\vcpkg\bootstrap-vcpkg.bat
-                    cmd /k .\vcpkg\vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
-            -   uses: ilammy/msvc-dev-cmd@v1
-                with:
-                    arch: ${{ matrix.target.arch }}
-            -   name: Build
-                shell: cmd
-                run: |
-                    set VCPKG_ROOT=%CD%\vcpkg
-                    cmake --preset ${{matrix.target.preset}} -B build .
-                    cmake --build build --target all
+  windows:
+    needs: code-style
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - windows-2022
+          - windows-2025
+        target:
+          - preset: x64-windows-release
+            triplet: x64-windows
+            arch: x64
+          - preset: x86-windows-release
+            triplet: x86-windows
+            arch: x86
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Checkout vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: xiaozhuai/vcpkg
+          submodules: recursive
+          path: vcpkg
+      - name: Install dependencies
+        shell: cmd
+        run: |
+          cmd /k .\vcpkg\bootstrap-vcpkg.bat
+          cmd /k .\vcpkg\vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: ${{ matrix.target.arch }}
+      - name: Build
+        shell: cmd
+        run: |
+          set VCPKG_ROOT=%CD%\vcpkg
+          cmake --preset ${{matrix.target.preset}} -B build .
+          cmake --build build --target all
 
-    macos:
-        needs: code-style
-        runs-on: ${{ matrix.runner }}
-        strategy:
-            matrix:
-                runner:
-                    - macos-14
-                    - macos-15
-                target:
-                    -   preset: x64-macos-release
-                        triplet: x64-osx
-                    -   preset: arm64-macos-release
-                        triplet: arm64-osx
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-            -   name: Checkout vcpkg
-                uses: actions/checkout@v4
-                with:
-                    repository: xiaozhuai/vcpkg
-                    submodules: recursive
-                    path: vcpkg
-            -   name: Install dependencies
-                run: |
-                    ./vcpkg/bootstrap-vcpkg.sh
-                    ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
-                    brew install ninja
-            -   name: Build
-                run: |
-                    export VCPKG_ROOT="$(pwd)/vcpkg"
-                    cmake --preset ${{matrix.target.preset}} -B build .
-                    cmake --build build --target all
+  macos:
+    needs: code-style
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - macos-14
+          - macos-15
+        target:
+          - preset: x64-macos-release
+            triplet: x64-osx
+          - preset: arm64-macos-release
+            triplet: arm64-osx
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Checkout vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: xiaozhuai/vcpkg
+          submodules: recursive
+          path: vcpkg
+      - name: Install dependencies
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
+          brew install ninja
+      - name: Build
+        run: |
+          export VCPKG_ROOT="$(pwd)/vcpkg"
+          cmake --preset ${{matrix.target.preset}} -B build .
+          cmake --build build --target all
 
-    linux:
-        needs: code-style
-        runs-on: ${{ matrix.runner }}
-        strategy:
-            matrix:
-                runner:
-                    - ubuntu-22.04
-                    - ubuntu-24.04
-                target:
-                    -   preset: x64-linux-release
-                        triplet: x64-linux
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-            -   name: Checkout vcpkg
-                uses: actions/checkout@v4
-                with:
-                    repository: xiaozhuai/vcpkg
-                    submodules: recursive
-                    path: vcpkg
-            -   name: Install dependencies
-                run: |
-                    ./vcpkg/bootstrap-vcpkg.sh
-                    ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
-                    sudo apt-get install -y ninja-build
-            -   name: Build
-                run: |
-                    export VCPKG_ROOT="$(pwd)/vcpkg"
-                    cmake --preset ${{matrix.target.preset}} -B build .
-                    cmake --build build --target all
+  linux:
+    needs: code-style
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-22.04
+          - ubuntu-24.04
+        target:
+          - preset: x64-linux-release
+            triplet: x64-linux
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Checkout vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: xiaozhuai/vcpkg
+          submodules: recursive
+          path: vcpkg
+      - name: Install dependencies
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
+          sudo apt-get install -y ninja-build
+      - name: Build
+        run: |
+          export VCPKG_ROOT="$(pwd)/vcpkg"
+          cmake --preset ${{matrix.target.preset}} -B build .
+          cmake --build build --target all
 
-    emscripten:
-        needs: code-style
-        runs-on: ${{ matrix.runner }}
-        strategy:
-            matrix:
-                runner:
-                    - ubuntu-24.04
-                target:
-                    -   preset: wasm32-emscripten-release
-                        triplet: wasm32-emscripten
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-            -   name: Checkout emsdk
-                uses: actions/checkout@v4
-                with:
-                    submodules: recursive
-                    repository: emscripten-core/emsdk
-                    path: emsdk
-            -   name: Install emsdk
-                run: |
-                    ./emsdk/emsdk install latest
-                    ./emsdk/emsdk activate latest
-            -   name: Checkout vcpkg
-                uses: actions/checkout@v4
-                with:
-                    repository: xiaozhuai/vcpkg
-                    submodules: recursive
-                    path: vcpkg
-            -   name: Install dependencies
-                run: |
-                    export EMSDK="$(pwd)/emsdk"
-                    ./vcpkg/bootstrap-vcpkg.sh
-                    ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
-                    sudo apt-get install -y ninja-build
-            -   name: Build
-                run: |
-                    export EMSDK="$(pwd)/emsdk"
-                    export VCPKG_ROOT="$(pwd)/vcpkg"
-                    cmake --preset ${{matrix.target.preset}} -B build .
-                    cmake --build build --target all
+  emscripten:
+    needs: code-style
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-24.04
+        target:
+          - preset: wasm32-emscripten-release
+            triplet: wasm32-emscripten
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Checkout emsdk
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: emscripten-core/emsdk
+          path: emsdk
+      - name: Install emsdk
+        run: |
+          ./emsdk/emsdk install latest
+          ./emsdk/emsdk activate latest
+      - name: Checkout vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: xiaozhuai/vcpkg
+          submodules: recursive
+          path: vcpkg
+      - name: Install dependencies
+        run: |
+          export EMSDK="$(pwd)/emsdk"
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --triplet ${{matrix.target.triplet}} --clean-after-build libwebp stb
+          sudo apt-get install -y ninja-build
+      - name: Build
+        run: |
+          export EMSDK="$(pwd)/emsdk"
+          export VCPKG_ROOT="$(pwd)/vcpkg"
+          cmake --preset ${{matrix.target.preset}} -B build .
+          cmake --build build --target all
