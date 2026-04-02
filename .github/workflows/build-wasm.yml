@@ -6,26 +6,49 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup emsdk
-        uses: mymindstorm/setup-emsdk@v14
+      - uses: actions/checkout@v6
         with:
-          version: latest
+          submodules: recursive
 
-      - name: Setup vcpkg
+      - name: Checkout emsdk
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          repository: emscripten-core/emsdk
+          path: emsdk
+
+      - name: Install emsdk
         run: |
-          git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
-          /opt/vcpkg/bootstrap-vcpkg.sh
-          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
+          ./emsdk/emsdk install latest
+          ./emsdk/emsdk activate latest
+
+      - name: Checkout vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: xiaozhuai/vcpkg
+          submodules: recursive
+          path: vcpkg
+
+      - name: Install dependencies
+        run: |
+          export EMSDK="$(pwd)/emsdk"
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg install --triplet wasm32-emscripten --clean-after-build libwebp
+          sudo apt-get install -y ninja-build
 
       - name: Configure
-        run: cmake --preset wasm32-emscripten-release
+        run: |
+          export EMSDK="$(pwd)/emsdk"
+          export VCPKG_ROOT="$(pwd)/vcpkg"
+          cmake --preset wasm32-emscripten-release -B build .
 
       - name: Build
-        run: cmake --build build/binary/wasm32-emscripten-release
+        run: |
+          export EMSDK="$(pwd)/emsdk"
+          export VCPKG_ROOT="$(pwd)/vcpkg"
+          cmake --build build --target all
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
