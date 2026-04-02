@@ -17,15 +17,15 @@ set_target_properties(lib${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 if (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
     add_executable(${PROJECT_NAME} ${WASM_SOURCES})
     target_link_libraries(${PROJECT_NAME} PRIVATE embind)
-    target_compile_options(${PROJECT_NAME} PRIVATE)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:-flto>)
     target_link_options(${PROJECT_NAME} PRIVATE
             -sEXPORT_NAME="WebpEncoderWasm"
             -sALLOW_MEMORY_GROWTH=1
             -sNO_FILESYSTEM=1
-            -sASSERTIONS=1
             -sSINGLE_FILE=1
             -sMODULARIZE=1
-            -sASYNCIFY=1)
+            -sASYNCIFY=1
+            -flto)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_custom_command(
                 TARGET ${PROJECT_NAME}

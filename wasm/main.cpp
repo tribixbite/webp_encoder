@@ -55,6 +55,57 @@ static bool WebpEncoder_Push(WebpEncoder &self, const emscripten::val &pixels, i
     if (options.hasOwnProperty("exact")) {
         o.exact = options["exact"].as<bool>();
     }
+    if (options.hasOwnProperty("sns_strength")) {
+        o.sns_strength = options["sns_strength"].as<int>();
+    }
+    if (options.hasOwnProperty("filter_strength")) {
+        o.filter_strength = options["filter_strength"].as<int>();
+    }
+    if (options.hasOwnProperty("filter_sharpness")) {
+        o.filter_sharpness = options["filter_sharpness"].as<int>();
+    }
+    if (options.hasOwnProperty("filter_type")) {
+        o.filter_type = options["filter_type"].as<int>();
+    }
+    if (options.hasOwnProperty("autofilter")) {
+        o.autofilter = options["autofilter"].as<int>();
+    }
+    if (options.hasOwnProperty("alpha_quality")) {
+        o.alpha_quality = options["alpha_quality"].as<int>();
+    }
+    if (options.hasOwnProperty("alpha_compression")) {
+        o.alpha_compression = options["alpha_compression"].as<int>();
+    }
+    if (options.hasOwnProperty("alpha_filtering")) {
+        o.alpha_filtering = options["alpha_filtering"].as<int>();
+    }
+    if (options.hasOwnProperty("pass")) {
+        o.pass = options["pass"].as<int>();
+    }
+    if (options.hasOwnProperty("preprocessing")) {
+        o.preprocessing = options["preprocessing"].as<int>();
+    }
+    if (options.hasOwnProperty("near_lossless")) {
+        o.near_lossless = options["near_lossless"].as<int>();
+    }
+    if (options.hasOwnProperty("sharp_yuv")) {
+        o.sharp_yuv = options["sharp_yuv"].as<int>();
+    }
+    if (options.hasOwnProperty("target_size")) {
+        o.target_size = options["target_size"].as<int>();
+    }
+    if (options.hasOwnProperty("segments")) {
+        o.segments = options["segments"].as<int>();
+    }
+    if (options.hasOwnProperty("partition_limit")) {
+        o.partition_limit = options["partition_limit"].as<int>();
+    }
+    if (options.hasOwnProperty("low_memory")) {
+        o.low_memory = options["low_memory"].as<int>();
+    }
+    if (options.hasOwnProperty("emulate_jpeg_size")) {
+        o.emulate_jpeg_size = options["emulate_jpeg_size"].as<int>();
+    }
     auto ret = self.Push(native_pixels.data(), width, height, o);
     emscripten_sleep(0);
     return ret;

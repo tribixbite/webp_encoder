@@ -1,0 +1,35 @@
+name: Build WASM
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+          /opt/vcpkg/bootstrap-vcpkg.sh
+          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
+
+      - name: Configure
+        run: cmake --preset wasm32-emscripten-release
+
+      - name: Build
+        run: cmake --build build/binary/wasm32-emscripten-release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webp-encoder-wasm
+          path: dist/webp_encoder.js
+          if-no-files-found: error

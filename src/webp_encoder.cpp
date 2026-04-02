@@ -108,8 +108,15 @@ std::string WebpFileOptions::to_string() const {
 }
 
 std::string WebpFrameOptions::to_string() const {
-    return StrFormat("WebpFrameOptions{duration: %d, quality: %.1f, method: %d, lossless: %d, exact: %d}", duration,
-                     quality, method, lossless, exact);
+    return StrFormat(
+        "WebpFrameOptions{duration: %d, quality: %.1f, method: %d, lossless: %d, exact: %d, "
+        "sns_strength: %d, filter_strength: %d, filter_sharpness: %d, filter_type: %d, autofilter: %d, "
+        "alpha_quality: %d, alpha_compression: %d, alpha_filtering: %d, pass: %d, preprocessing: %d, "
+        "near_lossless: %d, sharp_yuv: %d, target_size: %d, segments: %d, partition_limit: %d, "
+        "low_memory: %d, emulate_jpeg_size: %d}",
+        duration, quality, method, lossless, exact, sns_strength, filter_strength, filter_sharpness, filter_type,
+        autofilter, alpha_quality, alpha_compression, alpha_filtering, pass, preprocessing, near_lossless, sharp_yuv,
+        target_size, segments, partition_limit, low_memory, emulate_jpeg_size);
 }
 
 WebpEncoder::~WebpEncoder() { Release(); }
@@ -175,9 +182,23 @@ bool WebpEncoder::Push(uint8_t *pixels, int width, int height, const WebpFrameOp
     config.quality = options.quality;
     config.method = options.method;
     config.exact = options.exact;
-    // #if defined(__wasm__)
-    //     config.low_memory = true;
-    // #endif
+    config.sns_strength = options.sns_strength;
+    config.filter_strength = options.filter_strength;
+    config.filter_sharpness = options.filter_sharpness;
+    config.filter_type = options.filter_type;
+    config.autofilter = options.autofilter;
+    config.alpha_quality = options.alpha_quality;
+    config.alpha_compression = options.alpha_compression;
+    config.alpha_filtering = options.alpha_filtering;
+    config.pass = options.pass;
+    config.preprocessing = options.preprocessing;
+    config.near_lossless = options.near_lossless;
+    config.use_sharp_yuv = options.sharp_yuv;
+    config.target_size = options.target_size;
+    config.segments = options.segments;
+    config.partition_limit = options.partition_limit;
+    config.low_memory = options.low_memory;
+    config.emulate_jpeg_size = options.emulate_jpeg_size;
 
     if (!WebPValidateConfig(&config)) {
         LOGE("Invalid image config");

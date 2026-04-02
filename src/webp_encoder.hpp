@@ -72,6 +72,59 @@ struct WebpFrameOptions {
      */
     bool exact = false;
 
+    // --- Extended libwebp config fields ---
+
+    /** Spatial Noise Shaping strength (0-100). Higher = more aggressive SNS. */
+    int sns_strength = 50;
+
+    /** Deblocking filter strength (0-100). */
+    int filter_strength = 60;
+
+    /** Filter sharpness (0-7). Higher = less filtering. */
+    int filter_sharpness = 0;
+
+    /** Filter type: 0=simple, 1=strong (default). */
+    int filter_type = 1;
+
+    /** Auto-adjust filter strength (0 or 1). */
+    int autofilter = 0;
+
+    /** Transparency-compression quality (0-100). */
+    int alpha_quality = 100;
+
+    /** Algorithm for encoding alpha plane (0=none, 1=lossless). */
+    int alpha_compression = 1;
+
+    /** Predictive filtering method for alpha (0=none, 1=fast, 2=best). */
+    int alpha_filtering = 1;
+
+    /** Number of entropy-analysis passes (1-10). More = smaller file, slower. */
+    int pass = 1;
+
+    /** Preprocessing filter (0=none, 1=segment-smooth, 2=pseudo-random dithering). */
+    int preprocessing = 0;
+
+    /** Near-lossless quality (0-100, 100=off). Trades minimal visual loss for smaller lossless files. */
+    int near_lossless = 100;
+
+    /** Use sharp (and target) YUV conversion (0 or 1). Better chroma on sharp edges. */
+    int sharp_yuv = 0;
+
+    /** Target output size in bytes (0=off). Overrides quality if set. */
+    int target_size = 0;
+
+    /** Max number of segments (1-4). */
+    int segments = 4;
+
+    /** Partition size limit (0=off). Quality degradation allowed to fit partition limit. */
+    int partition_limit = 0;
+
+    /** Reduce memory usage at cost of CPU (0 or 1). */
+    int low_memory = 0;
+
+    /** Map internal quality metric to JPEG quality scale (0 or 1). */
+    int emulate_jpeg_size = 0;
+
     [[nodiscard]] std::string to_string() const;
 };
 
